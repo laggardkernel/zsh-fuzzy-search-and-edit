@@ -1,12 +1,22 @@
-if [[ "$OSTYPE" == "freebsd"* ]]; then
+if [[ $OSTYPE == freebsd* ]]; then
     grep_bin='/usr/local/bin/grep'
     if [[ ! -f $grep_bin ]]; then
         echo "Try install GNU grep: pkg install gnugrep"
         return
     fi
+    sed_bin='sed'
     pattern='s/^([^:]+:[^:]+):\s*(.*)/\1:  \2/'
+elif [[ $OSTYPE = darwin* ]]; then
+    if ! (( $+commands[ggrep] )) || ! (( $+commands[gsed] )); then
+        echo "Try install GNU grep and sed"
+        return
+    fi
+    grep_bin='ggrep'
+    sed_bin='gsed'
+    pattern='s/^([^:]+:[^:]+):\s*(.*)/\x1b[35m\1\x1b[0m:  \2/'
 else
     grep_bin='grep'
+    sed_bin='sed'
     pattern='s/^([^:]+:[^:]+):\s*(.*)/\x1b[35m\1\x1b[0m:  \2/'
 fi
 
@@ -16,7 +26,7 @@ function :fuzzy-search-and-edit:get-files() {
     cd "$directory"
     command $grep_bin -r -nEHI '[[:alnum:]]' "." --exclude-dir=".git" \
         | cut -b3- \
-        | command sed -ru $pattern > "$fifo"
+        | command $sed_bin -ru $pattern > "$fifo"
 }
 
 function :fuzzy-search-and-edit:abort-job() {
